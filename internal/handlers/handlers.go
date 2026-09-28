@@ -33,18 +33,6 @@ func (h *Handler) Ready(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, api.HealthResponse{Status: api.Ok})
 }
 
-func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params api.CreateTripParams) {
-	writeJSON(w, http.StatusNotImplemented, http.StatusNotImplemented)
-}
-
-func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {
-	writeJSON(w, http.StatusNotImplemented, http.StatusNotImplemented)
-}
-
-func (h *Handler) FinishTrip(w http.ResponseWriter, r *http.Request, tripId api.TripId) {
-	writeJSON(w, http.StatusNotImplemented, http.StatusNotImplemented)
-}
-
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
