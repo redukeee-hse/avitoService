@@ -51,7 +51,7 @@ func (r *TripRepository) Create(ctx context.Context, trip model.Trip) error {
 		return fmt.Errorf("запрос создания поездки: %w", err)
 	}
 
-	if _, err := r.pool.Exec(ctx, query, args...); err != nil {
+	if _, err := executorFrom(ctx, r.pool).Exec(ctx, query, args...); err != nil {
 		return fmt.Errorf("создание поездки: %w", err)
 	}
 
@@ -75,7 +75,7 @@ func (r *TripRepository) GetByID(ctx context.Context, id uuid.UUID) (model.Trip,
 	trip := model.Trip{
 		ID: id,
 	}
-	err = r.pool.QueryRow(ctx, query, args...).Scan(
+	err = executorFrom(ctx, r.pool).QueryRow(ctx, query, args...).Scan(
 		&trip.UserID,
 		&trip.DriverID,
 		&trip.StartPoint.Latitude,
@@ -109,7 +109,7 @@ func (r *TripRepository) AddStatusHistory(ctx context.Context, tripID uuid.UUID,
 		return fmt.Errorf("запрос истории статусов: %w", err)
 	}
 
-	if _, err := r.pool.Exec(ctx, query, args...); err != nil {
+	if _, err := executorFrom(ctx, r.pool).Exec(ctx, query, args...); err != nil {
 		return fmt.Errorf("вставка истории статусов: %w", err)
 	}
 	return nil
