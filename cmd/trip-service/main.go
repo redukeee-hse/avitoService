@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
@@ -68,12 +67,7 @@ func main() {
 	serversErr := make(chan error, 1)
 	go func() {
 		log.Printf("Запускаю сервер на %s", cfg.Addr)
-		err := server.ListenAndServe()
-		if errors.Is(err, http.ErrServerClosed) {
-			return
-		} else {
-			serversErr <- err
-		}
+		serversErr <- server.ListenAndServe()
 	}()
 
 	exitCode := 0
