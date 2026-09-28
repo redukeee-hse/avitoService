@@ -3,9 +3,15 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 	"github.com/redukeee-hse/avitoService/internal/config"
@@ -13,12 +19,14 @@ import (
 	api "github.com/redukeee-hse/avitoService/internal/generated"
 )
 
-
 func main() {
 	if err := godotenv.Load(); err != nil {
 		fmt.Println("Ошибка скачивания .env файлов:", err)
 	}
+
 	ctx := context.Background()
+	interruptCtx, stop := signal.NotifyContext(ctx, syscall.SIGTERM, os.Interrupt)
+	defer stop()
 	router := chi.NewRouter()
 
 	cfg, err := config.LoadConfig()
@@ -60,11 +68,46 @@ func main() {
 	serversErr := make(chan error, 1)
 	go func() {
 		log.Printf("Запускаю сервер на %s", cfg.Addr)
-		serversErr <- server.ListenAndServe()
+		err := server.ListenAndServe()
+		if errors.Is(err, http.ErrServerClosed) {
+			return
+		} else {
+			serversErr <- err
+		}
 	}()
 
-	err = <-serversErr
-	log.Fatalf("Ошибка сервера: %v", err)
+	exitCode := 0
+	select {
+	case <-interruptCtx.Done():
+		log.Println("Пришел запрос на остановку сервера(SIGINT, SIGTERM)")
+		log.Println("Начинаю закрытие сервера")
+	case err = <-serversErr:
+		if errors.Is(err, http.ErrServerClosed) {
+			log.Println("Остановка сервера")
+		} else {
+			log.Printf("Ошибка сервера: %v", err)
+			exitCode = 1
+		}
+	}
+
+	shutdownCtx, cancel := context.WithTimeout(ctx, cfg.ShutdownTimeout)
+	defer cancel()
+	err = server.Shutdown(shutdownCtx)
+	if err != nil {
+		log.Printf("Ошибка закрытия сервера: %v - Закрываю сервер принудительно", err)
+		err := server.Close()
+		if err != nil {
+			log.Printf("Внутренняя ошибка: %v", err)
+		}
+	}
+	log.Println("Сервер остановлен")
+
+	pool.Close()
+	log.Println("Пул закрыт")
+
+	if exitCode != 0 {
+		os.Exit(exitCode)
+	}
 
 }
 
@@ -73,6 +116,6 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.WriteHeader(status)
 
 	if err := json.NewEncoder(w).Encode(v); err != nil {
-		log.Printf("ошибка записи ответа: %v", err)
+		log.Printf("Ошибка записи ответа: %v", err)
 	}
 }
