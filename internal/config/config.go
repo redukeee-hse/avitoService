@@ -10,10 +10,15 @@ import (
 )
 
 type Config struct {
-	Addr            string
-	LogLvl          slog.Level
-	ShutdownTimeout time.Duration
-	DB              DBConfig
+	Addr              string
+	LogLvl            slog.Level
+	ShutdownTimeout   time.Duration
+	ReadHeaderTimeout time.Duration
+	ReadTimeout       time.Duration
+	WriteTimeout      time.Duration
+	IdleTimeout       time.Duration
+	PingTimeout       time.Duration
+	DB                DBConfig
 }
 
 type DBConfig struct {
@@ -95,10 +100,52 @@ func LoadConfig() (Config, error) {
 		)
 	}
 
+	readHeaderTimeout, err := getDurationEnv(
+		"HTTP_READ_HEADER_TIMEOUT",
+		5*time.Second,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	readTimeout, err := getDurationEnv(
+		"HTTP_READ_TIMEOUT",
+		10*time.Second,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	writeTimeout, err := getDurationEnv(
+		"HTTP_WRITE_TIMEOUT",
+		15*time.Second,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	idleTimeout, err := getDurationEnv(
+		"HTTP_IDLE_TIMEOUT",
+		60*time.Second,
+	)
+	if err != nil {
+		return Config{}, err
+	}
+
+	pingTimeout, err := getDurationEnv(
+		"HTTP_PING_TIMEOUT",
+		time.Second,
+	)
+
 	return Config{
-		Addr:            addr,
-		LogLvl:          logLvl,
-		ShutdownTimeout: shutdownTimeout,
+		Addr:              addr,
+		LogLvl:            logLvl,
+		ShutdownTimeout:   shutdownTimeout,
+		ReadHeaderTimeout: readHeaderTimeout,
+		ReadTimeout:       readTimeout,
+		WriteTimeout:      writeTimeout,
+		IdleTimeout:       idleTimeout,
+		PingTimeout:       pingTimeout,
 		DB: DBConfig{
 			URL:             url,
 			MaxConns:        maxConns,
