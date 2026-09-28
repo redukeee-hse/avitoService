@@ -8,12 +8,14 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redukeee-hse/avitoService/internal/business"
 	api "github.com/redukeee-hse/avitoService/internal/generated"
 )
 
 type Handler struct {
 	Pool        *pgxpool.Pool
 	PingTimeout time.Duration
+	Service     *business.TripService
 }
 
 func (h *Handler) Health(w http.ResponseWriter, r *http.Request) {

@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
+	"github.com/redukeee-hse/avitoService/internal/business"
 	"github.com/redukeee-hse/avitoService/internal/config"
 	"github.com/redukeee-hse/avitoService/internal/database"
 	api "github.com/redukeee-hse/avitoService/internal/generated"
@@ -46,9 +47,14 @@ func main() {
 		log.Fatalf("Не удалось подключиться к базе данных: %v", err)
 	}
 
+	repo := database.NewTripRepository(pool, cfg.DB.QueryTimeout)
+	txManager := database.NewTxManager(pool)
+	service := business.NewTripService(txManager, repo)
+
 	handler := handlers.Handler{
 		Pool:        pool,
 		PingTimeout: cfg.PingTimeout,
+		Service:     service,
 	}
 
 	var _ api.ServerInterface = (*handlers.Handler)(nil)
