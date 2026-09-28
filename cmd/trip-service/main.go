@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -16,6 +15,7 @@ import (
 	"github.com/redukeee-hse/avitoService/internal/config"
 	"github.com/redukeee-hse/avitoService/internal/database"
 	api "github.com/redukeee-hse/avitoService/internal/generated"
+	"github.com/redukeee-hse/avitoService/internal/handlers"
 )
 
 func main() {
@@ -40,19 +40,15 @@ func main() {
 		log.Fatal("Ошибка создания пула:", err)
 	}
 
-	router.Get("/ready", func(w http.ResponseWriter, r *http.Request) {
-		pingCtx, cancel := context.WithTimeout(r.Context(), cfg.PingTimeout)
-		defer cancel()
+	handler := handlers.Handler{
+		Pool:        pool,
+		PingTimeout: cfg.PingTimeout,
+	}
 
-		if err := pool.Ping(pingCtx); err != nil {
-			writeJSON(w, http.StatusServiceUnavailable, api.HealthResponse{Status: api.Unavailable})
-			return
-		}
-		writeJSON(w, http.StatusOK, api.HealthResponse{Status: api.Ok})
-	})
+	var _ api.ServerInterface = (*handlers.Handler)(nil)
 
-	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, api.HealthResponse{Status: api.Ok})
+	api.HandlerWithOptions(&handler, api.ChiServerOptions{
+		BaseRouter: router,
 	})
 
 	server := &http.Server{
@@ -103,13 +99,4 @@ func main() {
 		os.Exit(exitCode)
 	}
 
-}
-
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		log.Printf("Ошибка записи ответа: %v", err)
-	}
 }
