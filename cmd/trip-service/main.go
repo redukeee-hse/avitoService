@@ -35,9 +35,15 @@ func main() {
 	}
 
 	pool, err := database.NewPool(ctx, cfg.DB)
-
 	if err != nil {
 		log.Fatal("Ошибка создания пула:", err)
+	}
+
+	databaseConnectCtx, stopDatabaseCtx := context.WithTimeout(ctx, cfg.DB.ConnectTimeout)
+	err = pool.Ping(databaseConnectCtx)
+	stopDatabaseCtx()
+	if err != nil {
+		log.Fatalf("Не удалось подключиться к базе данных: %v", err)
 	}
 
 	handler := handlers.Handler{
