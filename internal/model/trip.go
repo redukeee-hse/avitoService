@@ -13,7 +13,9 @@ const (
 )
 
 var (
-	ErrTripNotFound = errors.New("поездка не найдена")
+	ErrTripNotFound  = errors.New("поездка не найдена")
+	ErrDriverBusy    = errors.New("у водителя уже есть активная поездка")
+	ErrTripCompleted = errors.New("поездка уже завершена")
 )
 
 type Coordinates struct {

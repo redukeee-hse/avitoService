@@ -54,7 +54,8 @@ func main() {
 	var _ api.ServerInterface = (*handlers.Handler)(nil)
 
 	api.HandlerWithOptions(&handler, api.ChiServerOptions{
-		BaseRouter: router,
+		BaseRouter:       router,
+		ErrorHandlerFunc: handlers.InvalidParamHandler,
 	})
 
 	server := &http.Server{

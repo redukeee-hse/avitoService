@@ -9,6 +9,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redukeee-hse/avitoService/internal/model"
 )
@@ -52,6 +53,12 @@ func (r *TripRepository) Create(ctx context.Context, trip model.Trip) error {
 	}
 
 	if _, err := executorFrom(ctx, r.pool).Exec(ctx, query, args...); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) &&
+			pgErr.Code == "23505" &&
+			pgErr.ConstraintName == "trips_driver_active_uniq" {
+			return model.ErrDriverBusy
+		}
 		return fmt.Errorf("создание поездки: %w", err)
 	}
 
